@@ -1,0 +1,7 @@
+# The bundle the runner executes. Committed because an action runs from the
+# tagged tree; CI rebuilds it and fails if it differs (`npm run check-dist`).
+dist/** linguist-generated=true -diff
+
+# `.agents/memory/decisions.md` is a generated router (`python3 scripts/adr.py index`)
+# whose only churn is appended table rows; `merge=union` keeps both sides.
+.agents/memory/decisions.md merge=union

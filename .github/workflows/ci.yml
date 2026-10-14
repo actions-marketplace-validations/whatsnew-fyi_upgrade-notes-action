@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, types, tests and dist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      # The runner executes dist/ from the tagged tree; it must match the source.
+      - run: npm run check-dist
+
+  docs:
+    name: Decisions and changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: python scripts/adr.py index --check
+      # Dogfood: this repo's changelog is itself a Declarative Changelog.
+      - run: npx -y declarative-changelog@0.2.1 validate CHANGELOG.md --require-level 2 --max-warnings 0

@@ -1,0 +1,61 @@
+name: What's New upgrade notes
+description: >-
+  Comments on dependency PRs with the vendor's own breaking changes, migration
+  notes, deprecations and CVE fixes for every version in between.
+author: What's New (whatsnew.fyi)
+
+branding:
+  icon: book-open
+  color: blue
+
+inputs:
+  github-token:
+    description: >-
+      Token used to read the PR and post the comment. The default GITHUB_TOKEN
+      works; give the job `pull-requests: write` so it can comment.
+    default: ${{ github.token }}
+  comment:
+    description: >-
+      auto: comment when the PR moves a dependency, and replace an earlier
+      comment when it no longer does. always: also comment when it moves
+      none. never: job summary and outputs only.
+    default: auto
+  fail-on:
+    description: >-
+      Fail the step when the notes show this: none, breaking (a breaking change
+      in the vendor's words or headings, a removal, or a major version),
+      security (a security fix or a CVE id), or both, comma-separated. The
+      comment is posted first either way.
+    default: none
+  record-misses:
+    description: >-
+      Let What's New count Maven, Go and NuGet packages it does not track yet,
+      once deps.dev confirms they are public. auto: on for public repositories,
+      off for private ones.
+    default: auto
+  exclude:
+    description: >-
+      Package names never sent, one glob per line or comma-separated
+      (`@acme/*`, `internal-*`). Use it for private packages.
+    default: ""
+  api-url:
+    description: The What's New origin. Change it only to test against a preview.
+    default: https://whatsnew.fyi
+
+outputs:
+  breaking:
+    description: "`true` when any package's notes show a breaking change, a removal or a major version."
+  security:
+    description: "`true` when any package's range includes a security fix or a CVE id."
+  cves:
+    description: The CVE ids fixed across the update, comma-separated.
+  dependencies:
+    description: How many packages were sent.
+  answered:
+    description: How many of those What's New could compare.
+  json:
+    description: Path to the full answer as JSON, for later steps.
+
+runs:
+  using: node24
+  main: dist/index.mjs
