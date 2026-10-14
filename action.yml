@@ -1,7 +1,7 @@
 name: What's New upgrade notes
 description: >-
-  Comments on dependency PRs with the vendor's own breaking changes, migration
-  notes, deprecations and CVE fixes for every version in between.
+  Comments on dependency PRs with the vendor's breaking changes, migration
+  notes and CVE fixes for every version in between.
 author: What's New (whatsnew.fyi)
 
 branding:

@@ -31888,7 +31888,7 @@ var BATCH = 20;
 var TIMEOUT_MS = 6e4;
 var MAX_RETRY_WAIT_MS = 1e4;
 function userAgent2() {
-  const version = true ? "1.0.0" : "0.0.0-dev";
+  const version = true ? "1.0.1" : "0.0.0-dev";
   return `whatsnew-upgrade-notes-action/${version} (+https://github.com/whatsnew-fyi/upgrade-notes-action)`;
 }
 var ApiError = class extends Error {

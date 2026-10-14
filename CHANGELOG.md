@@ -17,6 +17,10 @@ document:
 
 This file is a [Declarative Changelog](https://whatsnew.fyi/spec), validated in CI.
 
+## [1.0.1](https://github.com/whatsnew-fyi/upgrade-notes-action/releases/tag/v1.0.1) - 2026-10-14T00:00:00Z (routine)
+
+> The action's description is shorter, to fit the GitHub Marketplace's 125-character limit. Nothing else changed.
+
 ## [1.0.0](https://github.com/whatsnew-fyi/upgrade-notes-action/releases/tag/v1.0.0) - 2026-10-14T00:00:00Z
 
 > First release: one comment per dependency PR with the vendor's own notes for every version in between.
