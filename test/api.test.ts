@@ -101,6 +101,26 @@ describe("upgradeNotes", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it("refuses an answer that is not its JSON, or has no comment, without retrying", async () => {
+    const cases: [string, string][] = [
+      [
+        "<html>Checking your browser</html>",
+        "What's New answered with something other than its JSON",
+      ],
+      [
+        JSON.stringify({ data: { dependencies: [] }, meta: {} }),
+        "What's New answered without a rendered comment; the server is older than this Action",
+      ],
+    ];
+    for (const [body, message] of cases) {
+      const fetch = vi.fn(async () => new Response(body, { status: 200 }));
+      await expect(upgradeNotes(deps(1), options(fetch))).rejects.toThrow(
+        new ApiError(message),
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it("turns a network failure into an ApiError after one retry", async () => {
     const fetch = vi.fn(async () => {
       throw new TypeError("fetch failed");

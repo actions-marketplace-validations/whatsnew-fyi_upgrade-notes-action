@@ -81,7 +81,24 @@ async function post(
         `What's New did not answer: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-    if (response?.ok) return (await response.json()) as ApiAnswer;
+    if (response?.ok) {
+      const answer = (await response.json().catch(() => undefined)) as
+        | Partial<ApiAnswer>
+        | undefined;
+      // A challenge page or a proxy's error page arrives as HTML with a 200.
+      if (!answer?.data) {
+        throw new ApiError(
+          "What's New answered with something other than its JSON",
+        );
+      }
+      // A server older than `?render=markdown` answers the JSON alone.
+      if (typeof answer.rendered?.markdown !== "string") {
+        throw new ApiError(
+          "What's New answered without a rendered comment; the server is older than this Action",
+        );
+      }
+      return answer as ApiAnswer;
+    }
     if (response) {
       const detail = await response
         .json()

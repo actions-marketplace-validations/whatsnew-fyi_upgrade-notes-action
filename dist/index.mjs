@@ -31933,7 +31933,20 @@ async function post(dependencies, options) {
         `What's New did not answer: ${error2 instanceof Error ? error2.message : String(error2)}`
       );
     }
-    if (response?.ok) return await response.json();
+    if (response?.ok) {
+      const answer = await response.json().catch(() => void 0);
+      if (!answer?.data) {
+        throw new ApiError(
+          "What's New answered with something other than its JSON"
+        );
+      }
+      if (typeof answer.rendered?.markdown !== "string") {
+        throw new ApiError(
+          "What's New answered without a rendered comment; the server is older than this Action"
+        );
+      }
+      return answer;
+    }
     if (response) {
       const detail = await response.json().then(
         (body) => body.error?.message
