@@ -13,7 +13,7 @@ jobs:
     name: Lint, types, tests and dist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -29,7 +29,7 @@ jobs:
     name: Decisions and changelog
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
