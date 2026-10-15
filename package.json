@@ -1,6 +1,6 @@
 {
   "name": "upgrade-notes-action",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Posts the vendor's breaking changes, migration notes, deprecations and CVE fixes on every dependency PR, from What's New.",
   "license": "MIT",

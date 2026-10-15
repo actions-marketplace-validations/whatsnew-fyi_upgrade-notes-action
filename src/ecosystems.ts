@@ -52,6 +52,28 @@ const SHAPES: Record<string, Shape> = {
   swift: { kind: "purl", type: "swift" },
 };
 
+/** A Gradle plugin id: two or more dotted segments, no `:`. */
+const GRADLE_PLUGIN_ID = /^[A-Za-z][\w-]*(?:\.[\w-]+)+$/;
+
+/** The Gradle distribution, which Gradle releases from gradle/gradle. */
+const GRADLE_DISTRIBUTION = "pkg:github/gradle/gradle";
+
+/**
+ * The two names Dependabot's `gradle` ecosystem gives that are not
+ * `group:artifact`. `gradle-wrapper` is the Gradle distribution itself. A
+ * plugin goes by its id (`org.jetbrains.kotlin.jvm`), and every plugin is
+ * published with a marker artifact `<id>:<id>.gradle.plugin`, which is how
+ * What's New reads a plugin id too: the marker's group is the id, so a product
+ * claiming `pkg:maven/org.jetbrains.kotlin/*` answers for it. Renovate already
+ * sends the marker as its `packageName`.
+ */
+function gradlePurl(name: string): string | undefined {
+  if (name === "gradle-wrapper") return GRADLE_DISTRIBUTION;
+  return GRADLE_PLUGIN_ID.test(name)
+    ? `pkg:maven/${name}/${name}.gradle.plugin`
+    : undefined;
+}
+
 /** `group:artifact` → `group/artifact`; a Go module path stays as it is. */
 function purlPath(type: string, name: string): string | undefined {
   if (type === "maven") {
@@ -85,6 +107,14 @@ export function toApiDependency(
         : { skip: "an action without an owner and repository" };
     }
     return { dependency: { ...base, purl } };
+  }
+  // Renovate's datasource for the Gradle wrapper.
+  if (bump.ecosystem === "gradle-version") {
+    return { dependency: { ...base, purl: GRADLE_DISTRIBUTION } };
+  }
+  if (bump.ecosystem === "gradle" && !bump.name.includes(":")) {
+    const purl = gradlePurl(bump.name);
+    if (purl) return { dependency: { ...base, purl } };
   }
   const shape = SHAPES[bump.ecosystem];
   if (!shape || shape.kind === "skip") {

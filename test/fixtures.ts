@@ -48,6 +48,59 @@ updated-dependencies:
 
 Signed-off-by: dependabot[bot] <support@github.com>`;
 
+/**
+ * A Gradle group, trimmed from a real one (getknit/knit-spool PR 8,
+ * 2026-10-15): the wrapper, a library, a plugin listed once per manifest, and
+ * a name no rule maps.
+ */
+export const DEPENDABOT_GRADLE = `Bumps the gradle group with 4 updates:
+
+Updates \`gradle-wrapper\` from 9.5.0 to 9.8.1
+- [Release notes](https://github.com/gradle/gradle/releases)
+- [Commits](https://github.com/gradle/gradle/compare/v9.5.0...v9.8.1)
+
+Updates \`org.xerial:sqlite-jdbc\` from 3.50.3.0 to 3.53.4.0
+- [Release notes](https://github.com/xerial/sqlite-jdbc/releases)
+
+Updates \`org.jetbrains.kotlin.plugin.serialization\` from 2.4.0 to 2.4.21
+- [Release notes](https://github.com/JetBrains/kotlin/releases)
+
+Updates \`org.jetbrains.kotlin.plugin.serialization\` from 2.4.0 to 2.4.21
+- [Release notes](https://github.com/JetBrains/kotlin/releases)
+
+Updates \`toolchain\` from 1.0.0 to 2.0.0
+
+---
+updated-dependencies:
+- dependency-name: gradle-wrapper
+  dependency-version: 9.8.1
+  dependency-type: direct:production
+  update-type: version-update:semver-minor
+  dependency-group: gradle
+- dependency-name: org.xerial:sqlite-jdbc
+  dependency-version: 3.53.4.0
+  dependency-type: direct:production
+  update-type: version-update:semver-minor
+  dependency-group: gradle
+- dependency-name: org.jetbrains.kotlin.plugin.serialization
+  dependency-version: 2.4.21
+  dependency-type: direct:production
+  update-type: version-update:semver-patch
+  dependency-group: gradle
+- dependency-name: org.jetbrains.kotlin.plugin.serialization
+  dependency-version: 2.4.21
+  dependency-type: direct:production
+  update-type: version-update:semver-patch
+  dependency-group: gradle
+- dependency-name: toolchain
+  dependency-version: 2.0.0
+  dependency-type: direct:production
+  update-type: version-update:semver-major
+  dependency-group: gradle
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>`;
+
 /** Two majors of one package in one group, and no `dependency-version` keys (older messages). */
 export const DEPENDABOT_SAME_NAME = `Bumps the production group with 2 updates:
 

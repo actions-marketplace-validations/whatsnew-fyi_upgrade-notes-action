@@ -79,6 +79,29 @@ describe("toApiDependency", () => {
     ).toBe("pkg:github/actions/setup-node");
   });
 
+  it("sends a Gradle plugin id as its marker artifact, and the wrapper as Gradle itself", () => {
+    expect(mapped(bump("gradle", "org.jetbrains.kotlin.jvm")).purl).toBe(
+      "pkg:maven/org.jetbrains.kotlin.jvm/org.jetbrains.kotlin.jvm.gradle.plugin",
+    );
+    expect(mapped(bump("gradle", "com.diffplug.spotless")).purl).toBe(
+      "pkg:maven/com.diffplug.spotless/com.diffplug.spotless.gradle.plugin",
+    );
+    expect(mapped(bump("gradle", "gradle-wrapper")).purl).toBe(
+      "pkg:github/gradle/gradle",
+    );
+    // Renovate's datasource for the wrapper.
+    expect(mapped(bump("gradle-version", "gradle")).purl).toBe(
+      "pkg:github/gradle/gradle",
+    );
+    // A plugin id is Gradle's alone: Maven names its plugins `group:artifact`.
+    expect(toApiDependency(bump("maven", "org.jetbrains.kotlin.jvm"))).toEqual({
+      skip: '"org.jetbrains.kotlin.jvm" is not a maven name',
+    });
+    expect(toApiDependency(bump("gradle", "toolchain"))).toEqual({
+      skip: '"toolchain" is not a maven name',
+    });
+  });
+
   it("skips what it cannot name, and says why", () => {
     expect(toApiDependency(bump("terraform", "hashicorp/aws"))).toEqual({
       skip: "the terraform ecosystem is not covered",

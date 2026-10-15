@@ -31888,7 +31888,7 @@ var BATCH = 20;
 var TIMEOUT_MS = 6e4;
 var MAX_RETRY_WAIT_MS = 1e4;
 function userAgent2() {
-  const version = true ? "1.0.1" : "0.0.0-dev";
+  const version = true ? "1.0.2" : "0.0.0-dev";
   return `whatsnew-upgrade-notes-action/${version} (+https://github.com/whatsnew-fyi/upgrade-notes-action)`;
 }
 var ApiError = class extends Error {
@@ -32008,6 +32008,12 @@ var SHAPES = {
   dart: { kind: "purl", type: "pub" },
   swift: { kind: "purl", type: "swift" }
 };
+var GRADLE_PLUGIN_ID = /^[A-Za-z][\w-]*(?:\.[\w-]+)+$/;
+var GRADLE_DISTRIBUTION = "pkg:github/gradle/gradle";
+function gradlePurl(name) {
+  if (name === "gradle-wrapper") return GRADLE_DISTRIBUTION;
+  return GRADLE_PLUGIN_ID.test(name) ? `pkg:maven/${name}/${name}.gradle.plugin` : void 0;
+}
 function purlPath(type, name) {
   if (type === "maven") {
     const [group, artifact] = name.split(":");
@@ -32029,6 +32035,13 @@ function toApiDependency(bump) {
       return path2 ? { dependency: { ...base, purl: `pkg:github/${path2}` } } : { skip: "an action without an owner and repository" };
     }
     return { dependency: { ...base, purl } };
+  }
+  if (bump.ecosystem === "gradle-version") {
+    return { dependency: { ...base, purl: GRADLE_DISTRIBUTION } };
+  }
+  if (bump.ecosystem === "gradle" && !bump.name.includes(":")) {
+    const purl = gradlePurl(bump.name);
+    if (purl) return { dependency: { ...base, purl } };
   }
   const shape = SHAPES[bump.ecosystem];
   if (!shape || shape.kind === "skip") {
@@ -32074,12 +32087,20 @@ function signalsOf(answers) {
     answered: answered.length
   };
 }
-function commentBody(answers) {
+var SKIPS_IN_COMMENT = 20;
+function skippedLine(skipped, cap = Infinity) {
+  if (!skipped.length) return "";
+  const shown = skipped.slice(0, cap);
+  const more = skipped.length - shown.length;
+  return `Skipped: ${shown.join("; ")}${more > 0 ? `; and ${more} more, in this run's job summary` : ""}.`;
+}
+function commentBody(answers, skipped = []) {
+  const skips = skippedLine(skipped, SKIPS_IN_COMMENT);
   let body = MARKER;
   let omitted = 0;
   answers.forEach((answer, index) => {
     const part = `${index === 0 ? "\n" : "\n\n---\n\n"}${answer.rendered.markdown}`;
-    if (body.length + part.length > COMMENT_LIMIT - 200) {
+    if (body.length + part.length > COMMENT_LIMIT - 200 - skips.length) {
       omitted += answer.data.dependencies.length;
       return;
     }
@@ -32090,10 +32111,17 @@ function commentBody(answers) {
 
 _${omitted} more ${omitted === 1 ? "package is" : "packages are"} in this run's job summary; one comment holds 65,536 characters._`;
   }
+  if (skips) body += `
+
+${skips}`;
   return { body, omitted };
 }
-function summaryBody(answers) {
-  return answers.map((answer) => answer.rendered.markdown).join("\n\n---\n\n");
+function summaryBody(answers, skipped = []) {
+  const body = answers.map((answer) => answer.rendered.markdown).join("\n\n---\n\n");
+  const skips = skippedLine(skipped);
+  return skips ? `${body}
+
+${skips}` : body;
 }
 function emptyBody(skipped) {
   const lines = [
@@ -32103,7 +32131,7 @@ function emptyBody(skipped) {
     "No dependency version changes found in this pull request."
   ];
   if (skipped.length) {
-    lines.push("", `Skipped: ${skipped.join("; ")}.`);
+    lines.push("", skippedLine(skipped, SKIPS_IN_COMMENT));
   }
   return lines.join("\n");
 }
@@ -32268,14 +32296,17 @@ function plan(bumps, exclude) {
   const dependencies = [];
   const skipped = [];
   const seen = /* @__PURE__ */ new Set();
+  const skip = (line) => {
+    if (!skipped.includes(line)) skipped.push(line);
+  };
   for (const bump of bumps) {
     if (excluded(bump.name, exclude)) {
-      skipped.push(`${bump.name} (excluded)`);
+      skip(`${bump.name} (excluded)`);
       continue;
     }
     const mapped = toApiDependency(bump);
     if ("skip" in mapped) {
-      skipped.push(`${bump.name} (${mapped.skip})`);
+      skip(`${bump.name} (${mapped.skip})`);
       continue;
     }
     const key = JSON.stringify(mapped.dependency);
@@ -32315,6 +32346,7 @@ async function run(inputs, pr, repository, ports) {
       `Read ${bumps.length} version ${bumps.length === 1 ? "change" : "changes"} from ${source}; asking about ${dependencies.length}.`
     );
   }
+  for (const line of skipped) ports.info(`Skipped ${line}.`);
   const base = {
     source,
     sent: dependencies.length,
@@ -32363,7 +32395,7 @@ async function run(inputs, pr, repository, ports) {
     answered: String(signals.answered),
     json
   };
-  const comment = inputs.comment === "never" ? "skipped" : await upsert(github, commentBody(answers).body, ports.warning);
+  const comment = inputs.comment === "never" ? "skipped" : await upsert(github, commentBody(answers, skipped).body, ports.warning);
   const reasons = [
     inputs.failOn.has("breaking") && signals.breaking ? "a breaking change, removal or major version" : void 0,
     inputs.failOn.has("security") && signals.security ? `a security fix${signals.cves.length ? ` (${signals.cves.join(", ")})` : ""}` : void 0
@@ -32372,7 +32404,7 @@ async function run(inputs, pr, repository, ports) {
     ...base,
     signals,
     outputs,
-    summary: summaryBody(answers),
+    summary: summaryBody(answers, skipped),
     comment,
     failure: reasons.length ? `fail-on: the vendors' notes for this update include ${reasons.join(" and ")}.` : void 0
   };
