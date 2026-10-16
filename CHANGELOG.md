@@ -8,7 +8,7 @@ product:
   versioning: semver
   category: developer-tools
 document:
-  updated: 2026-10-14T00:00:00Z
+  updated: 2026-10-15T00:00:00Z
   coverage: complete
   canonical: https://github.com/whatsnew-fyi/upgrade-notes-action/blob/main/CHANGELOG.md
 ---
@@ -16,6 +16,15 @@ document:
 # What's New upgrade notes changelog
 
 This file is a [Declarative Changelog](https://whatsnew.fyi/spec), validated in CI.
+
+## [1.0.2](https://github.com/whatsnew-fyi/upgrade-notes-action/releases/tag/v1.0.2) - 2026-10-15T00:00:00Z
+
+> Gradle plugin and wrapper bumps get their notes, and a package the action does not send is always named.
+
+### Fixed
+
+- Send a Gradle plugin bump (`org.jetbrains.kotlin.jvm`) as the plugin's marker artifact, and a `gradle-wrapper` bump as Gradle itself. Both were skipped before.
+- Name every skipped package in the log, the comment and the job summary. Only a comment with nothing else to say listed them before.
 
 ## [1.0.1](https://github.com/whatsnew-fyi/upgrade-notes-action/releases/tag/v1.0.1) - 2026-10-14T00:00:00Z (routine)
 

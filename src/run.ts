@@ -110,14 +110,18 @@ function plan(
   const dependencies: ApiDependency[] = [];
   const skipped: string[] = [];
   const seen = new Set<string>();
+  // Dependabot lists a package once per manifest, so one skip can arrive twice.
+  const skip = (line: string) => {
+    if (!skipped.includes(line)) skipped.push(line);
+  };
   for (const bump of bumps) {
     if (excluded(bump.name, exclude)) {
-      skipped.push(`${bump.name} (excluded)`);
+      skip(`${bump.name} (excluded)`);
       continue;
     }
     const mapped = toApiDependency(bump);
     if ("skip" in mapped) {
-      skipped.push(`${bump.name} (${mapped.skip})`);
+      skip(`${bump.name} (${mapped.skip})`);
       continue;
     }
     // Two manifests bumping one package the same way is one question.
@@ -169,6 +173,8 @@ export async function run(
       `Read ${bumps.length} version ${bumps.length === 1 ? "change" : "changes"} from ${source}; asking about ${dependencies.length}.`,
     );
   }
+  // ADR 2026-10.d86j: every skip is reported in the log and the comment.
+  for (const line of skipped) ports.info(`Skipped ${line}.`);
 
   const base = {
     source,
@@ -231,7 +237,7 @@ export async function run(
   const comment =
     inputs.comment === "never"
       ? "skipped"
-      : await upsert(github, commentBody(answers).body, ports.warning);
+      : await upsert(github, commentBody(answers, skipped).body, ports.warning);
 
   const reasons = [
     inputs.failOn.has("breaking") && signals.breaking
@@ -246,7 +252,7 @@ export async function run(
     ...base,
     signals,
     outputs,
-    summary: summaryBody(answers),
+    summary: summaryBody(answers, skipped),
     comment,
     failure: reasons.length
       ? `fail-on: the vendors' notes for this update include ${reasons.join(" and ")}.`

@@ -48,20 +48,36 @@ export function signalsOf(answers: readonly ApiAnswer[]): Signals {
   };
 }
 
+/** How many skips the comment names before it points at the job summary. */
+const SKIPS_IN_COMMENT = 20;
+
+/** `Skipped: a (why); b (why).`, or nothing when nothing was skipped. */
+function skippedLine(skipped: readonly string[], cap = Infinity): string {
+  if (!skipped.length) return "";
+  const shown = skipped.slice(0, cap);
+  const more = skipped.length - shown.length;
+  return `Skipped: ${shown.join("; ")}${more > 0 ? `; and ${more} more, in this run's job summary` : ""}.`;
+}
+
 /**
  * The comment: the marker, then each batch's rendering. One batch is the
  * common case; past the 20-package cap the batches are joined, and any that
  * would push the comment past GitHub's limit are left to the job summary.
+ * Packages that were never sent close it, so nothing a PR moves goes unmentioned.
  */
-export function commentBody(answers: readonly ApiAnswer[]): {
+export function commentBody(
+  answers: readonly ApiAnswer[],
+  skipped: readonly string[] = [],
+): {
   body: string;
   omitted: number;
 } {
+  const skips = skippedLine(skipped, SKIPS_IN_COMMENT);
   let body = MARKER;
   let omitted = 0;
   answers.forEach((answer, index) => {
     const part = `${index === 0 ? "\n" : "\n\n---\n\n"}${answer.rendered.markdown}`;
-    if (body.length + part.length > COMMENT_LIMIT - 200) {
+    if (body.length + part.length > COMMENT_LIMIT - 200 - skips.length) {
       omitted += answer.data.dependencies.length;
       return;
     }
@@ -70,12 +86,20 @@ export function commentBody(answers: readonly ApiAnswer[]): {
   if (omitted > 0) {
     body += `\n\n_${omitted} more ${omitted === 1 ? "package is" : "packages are"} in this run's job summary; one comment holds 65,536 characters._`;
   }
+  if (skips) body += `\n\n${skips}`;
   return { body, omitted };
 }
 
 /** The job summary holds a megabyte, so it gets every batch whole. */
-export function summaryBody(answers: readonly ApiAnswer[]): string {
-  return answers.map((answer) => answer.rendered.markdown).join("\n\n---\n\n");
+export function summaryBody(
+  answers: readonly ApiAnswer[],
+  skipped: readonly string[] = [],
+): string {
+  const body = answers
+    .map((answer) => answer.rendered.markdown)
+    .join("\n\n---\n\n");
+  const skips = skippedLine(skipped);
+  return skips ? `${body}\n\n${skips}` : body;
 }
 
 /** Shown when the PR changes no dependency this Action could read. */
@@ -87,7 +111,7 @@ export function emptyBody(skipped: readonly string[]): string {
     "No dependency version changes found in this pull request.",
   ];
   if (skipped.length) {
-    lines.push("", `Skipped: ${skipped.join("; ")}.`);
+    lines.push("", skippedLine(skipped, SKIPS_IN_COMMENT));
   }
   return lines.join("\n");
 }

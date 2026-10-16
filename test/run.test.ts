@@ -13,6 +13,7 @@ import {
   answer,
   answered,
   change,
+  DEPENDABOT_GRADLE,
   DEPENDABOT_GROUP,
   renovateMarker,
 } from "./fixtures.ts";
@@ -180,6 +181,54 @@ describe("run", () => {
       "next",
     ]);
     expect(result.skipped).toEqual(["better-auth (excluded)"]);
+    // ADR 2026-10.d86j: a skip is said in the log and the comment, not only
+    // in the comment that answers nothing.
+    expect(p.info).toHaveBeenCalledWith("Skipped better-auth (excluded).");
+    expect(gh.createComment).toHaveBeenCalledWith(
+      expect.stringMatching(/\n\nSkipped: better-auth \(excluded\)\.$/),
+    );
+  });
+
+  it("sends a Gradle group's wrapper and plugins, once each, and names what it cannot", async () => {
+    const gh = github({ messages: [DEPENDABOT_GRADLE] });
+    const p = ports(gh, () => BREAKING);
+    const result = await run(
+      inputs(),
+      { ...DEPENDABOT_PR, headRef: "dependabot/gradle/gradle-e7d4689dfc" },
+      { private: false },
+      p,
+    );
+    expect(JSON.parse(String(p.fetch.mock.calls[0]?.[1]?.body))).toEqual({
+      dependencies: [
+        {
+          name: "gradle-wrapper",
+          from: "9.5.0",
+          to: "9.8.1",
+          purl: "pkg:github/gradle/gradle",
+        },
+        {
+          name: "org.xerial:sqlite-jdbc",
+          from: "3.50.3.0",
+          to: "3.53.4.0",
+          purl: "pkg:maven/org.xerial/sqlite-jdbc",
+        },
+        {
+          name: "org.jetbrains.kotlin.plugin.serialization",
+          from: "2.4.0",
+          to: "2.4.21",
+          purl: "pkg:maven/org.jetbrains.kotlin.plugin.serialization/org.jetbrains.kotlin.plugin.serialization.gradle.plugin",
+        },
+      ],
+      recordMisses: true,
+    });
+    expect(result.skipped).toEqual([
+      'toolchain ("toolchain" is not a maven name)',
+    ]);
+    expect(gh.createComment).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Skipped: toolchain ("toolchain" is not a maven name).',
+      ),
+    );
   });
 
   it("reads a Renovate PR from the preset's markers", async () => {

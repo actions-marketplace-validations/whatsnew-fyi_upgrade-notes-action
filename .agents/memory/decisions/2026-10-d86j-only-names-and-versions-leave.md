@@ -39,3 +39,11 @@ public one without `node_modules`, which a PR workflow does not install. So
 `test/run.test.ts` covers `exclude` and the visibility default;
 `test/api.test.ts` asserts the request body holds only the dependencies and
 `recordMisses`.
+
+**Amended 2026-10-15.** Until 1.0.2 only the comment that answered nothing
+named its skips. The first real Gradle group (getknit/knit-spool PR 8) dropped
+`gradle-wrapper` and three plugin ids without a word in the log or the comment.
+Now each skip is a log line and a `Skipped:` line closing every comment and
+job summary, and a skip repeated across manifests is said once. Those four
+names are no longer skipped: a plugin id is sent as its marker artifact, the
+wrapper as `pkg:github/gradle/gradle`. `test/run.test.ts` holds both.
